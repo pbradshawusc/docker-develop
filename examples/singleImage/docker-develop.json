@@ -1,0 +1,23 @@
+[
+    {
+        "dockerConfig": {
+            "imageName": "single-image-sample",
+            "buildArgs": [],
+            "runArgs": [
+                ["-p", "8080:80"]
+            ]
+        },
+        "watchConfig": [
+            {
+                "path": "./src",
+                "recursive": true,
+                "regex": ".*"
+            },
+            {
+                "path": ".",
+                "recursive": false,
+                "regex": "Dockerfile|.dockerignore"
+            }
+        ]
+    }
+]

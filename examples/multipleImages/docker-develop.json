@@ -1,0 +1,46 @@
+[
+    {
+        "dockerConfig": {
+            "imageName": "multiple-image-sample-one",
+            "root": "./imageOne",
+            "buildArgs": [],
+            "runArgs": [
+                ["-p", "8080:80"]
+            ]
+        },
+        "watchConfig": [
+            {
+                "path": "./imageOne/src",
+                "recursive": true,
+                "regex": ".*"
+            },
+            {
+                "path": "./imageOne",
+                "recursive": false,
+                "regex": "Dockerfile|.dockerignore"
+            }
+        ]
+    },
+    {
+        "dockerConfig": {
+            "imageName": "multiple-image-sample-two",
+            "root": "./imageTwo",
+            "buildArgs": [],
+            "runArgs": [
+                ["-p", "8081:80"]
+            ]
+        },
+        "watchConfig": [
+            {
+                "path": "./imageTwo/src",
+                "recursive": true,
+                "regex": ".*"
+            },
+            {
+                "path": "./imageTwo",
+                "recursive": false,
+                "regex": "Dockerfile|.dockerignore"
+            }
+        ]
+    }
+]
