@@ -4,7 +4,7 @@ const chalk = require('chalk');
 
 // Handles the launch and relaunch of a Dockerized application
 export class DockerDevelopLauncher {
-    constructor(dockerConfig) {
+    constructor(dockerConfig, provider) {
         this.validateDockerConfig(dockerConfig);
         this.imageName = dockerConfig.imageName;
         this.root = dockerConfig.root || `.`
@@ -12,6 +12,7 @@ export class DockerDevelopLauncher {
         this.runArgs = dockerConfig.runArgs || [];
         this.dockerProcess = undefined;
         this.debounceMap = {};
+        this.provider = provider;
     }
 
     validateDockerConfig(dockerConfig) {
@@ -24,7 +25,7 @@ export class DockerDevelopLauncher {
     }
 
     // Main methods
-    launch() {
+    async launch() {
         console.log(`Launching ${this.imageName}...`);
         // Stringify Build Args
         var buildArgsString = "";
@@ -37,6 +38,17 @@ export class DockerDevelopLauncher {
         this.runArgs.forEach(arg => {
             runArgsString += `${arg.join(' ')} `;
         });
+
+        // Add provided env Build/Run Args
+        if (this.provider) {
+            var env = await this.provider.provide();
+            if (env && Object.keys(env).length) {
+                Object.keys(env).forEach(key => {
+                    buildArgsString += `--build-arg ${key}=${env[key]} `;
+                    runArgsString += `-e ${key}=${env[key]} `;
+                });
+            }
+        }
 
         // Launch Docker
         this.dockerProcess = shell.exec(`docker build ${buildArgsString ? buildArgsString : ''}-t '${this.imageName}' ${this.root} && docker run ${runArgsString ? runArgsString : ''}'${this.imageName}'`, { async: true, silent: true });

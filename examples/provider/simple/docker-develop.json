@@ -1,0 +1,28 @@
+[
+    {
+        "dockerConfig": {
+            "imageName": "simple-provider-sample",
+            "buildArgs": [],
+            "runArgs": [
+                ["-p", "8080:80"]
+            ]
+        },
+        "envProviderConfig": {
+            "simple": {
+                "TEST_VAR": "test-value"
+            }
+        },
+        "watchConfig": [
+            {
+                "path": "./src",
+                "recursive": true,
+                "regex": ".*"
+            },
+            {
+                "path": ".",
+                "recursive": false,
+                "regex": "Dockerfile|.dockerignore"
+            }
+        ]
+    }
+]

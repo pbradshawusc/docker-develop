@@ -17,6 +17,7 @@ A simple CLI utility for developing with Docker locally and automatically rebuil
   * [ConfigLoader](#configloader)
   * [Launcher](#launcher)
   * [Watcher](#watcher)
+  * [Provider](#provider)
 - [Release Notes](release-notes.md)
 
 ## Installation
@@ -89,6 +90,16 @@ The configuration schema is defined as below:
                         "description": "A single argument to provide to Docker during the `docker build` step. Each string in the array will be concatenated with a single space.",
                         "required": false,
                         "example": ["--target", "dev"]
+                    }
+                }
+            },
+            "envProviderConfig": {
+                "aws": {
+                    "profile": {
+                        "type": "String",
+                        "description": "The name of the AWS profile that the AWS Provider should automatically select for retrieving AWS credentials for the launched Docker container. If the `aws` object is provided but `profile` is not included, the AWS Provider will auto-discover profiles and prompt the user to select a profile. If the `aws` object is not provided, no AWS credentials will be provided to the launched Docker container.",
+                        "required": false,
+                        "example": "default"
                     }
                 }
             },
@@ -165,6 +176,9 @@ Example configuration:
                 ["-e", "EnvironmentVariable=hello-world"]
             ]
         },
+        "envProviderConfig": {
+            "aws": {}
+        },
         "watchConfig": [
             {
                 "path": "./src",
@@ -188,6 +202,9 @@ Example configuration:
 | [Single Image Watch](examples/singleImage) | Launching a single Hello World web application and watching the source HTML for changes. Available on `localhost:8080`. | From `examples/singleImage`, run `docker-develop` |
 | [Alternate Configuration](examples/singleImage) | Launching a single Hello World web application with an alternate configuration and watching the source HTML for changes. Available on `localhost:8081`. | From `examples/singleImage`, run `docker-develop --config docker-develop-alternate.json` or `docker-develop -c docker-develop-alternate.json` |
 | [Multiple Image Watch](examples/multipleImages) | Launching two Hellow World web applications and watching the source HTML of each for changes. Each container rebuilds and relaunches only for changes to it's own source. Available on `localhost:8080` and `localhost:8081`. | From `examples/multipleImages`, run `docker-develop` |
+| [Simple Provider](examples/provider/simple) | Launching a single Hello World web application but more importantly logging out simple environment variable during Docker build. | From `examples/provider/simple`, run `docker-develop` |
+| [AWS Select Profile Provider](examples/provider/aws) | Launching a single Hello World web application but more importantly prompting the user to select an AWS profile before launch and logging out the AWS Region (buildArg) during Docker build. | From `examples/provider/aws`, run `docker-develop` |
+| [AWS Default Provider](examples/provider/aws) | Launching a single Hello World web application but more importantly logging out the AWS Region (buildArg) of the default AWS profile during Docker build. | From `examples/provider/aws`, run `docker-develop --config docker-develop-alternate.json` |
 
 ## Core Concepts
 
@@ -206,3 +223,21 @@ Additionally, restart requests are debounced to prevent flooding the application
 ### Watcher
 
 The `DockerDevelopWatcher` handles watching the filesystem for changes according to the specified watch configuration. Upon a change that matches the provided regex pattern (or `\.*\` if not provided), the watcher will restart the provided `DockerLauncher`.
+
+### Provider
+
+To facilitate the collection of dynamic environment variables (e.g. AWS credentials, login information, etc.) - particularly those that you do not wish to include in source - Docker Develop introduces the concept of a `Provider` and the `DockerDevelopBaseProvider` class. A provider is referenced by name in the `docker-develop.json` configuration and uses it's custom configuration to asynchronously provide a dictionary of environment variables to be passed to Docker as both build-time `buildArgs` and runtime environment variables (`-e`).
+
+> Note that Providers will asynchronously obtain environment variable keys and values on first launch of the associated Docker container, but will cache and reuse these values for any container restarts. To force the Provider to refetch environment variables, you must kill the Docker Develop session and relaunch.
+
+The `DockerDevelopProviderManager` reads in the `envProviderConfig` and creates/manages the lifecycle of all specified Providers. Each container has it's own Provider Manager.
+
+> Note that the Provider Manager will create a Provider so long as its configuration exists, even if that configuration is empty (i.e. `"envProviderConfig": { "aws": {} }` will cause an AWS Provider to be created while `"envProviderConfig": {}` will cause no Provider to be created). In other words, the existence of an empty configuration object has meaning.
+
+#### Supported Providers
+
+Detailed provider configuration can be found above in the [Configuration](#configuration) section. Below is a summary of supported providers and their root key.
+
+| Name | Configuration Key | Description |
+| :-- | :-- | :-- |
+| AWS Provider | `aws` | Loads AWS configuration (region, access key id, and secret access key) from host machine and makes these values available as `AWS_REGION`, `AWS_ACCESS_KEY_ID`, and `AWS_SECRET_ACCESS_KEY` respectively. For applications using AWS services, these environment variables in your container will cause your application running locally to mimic an application running remotely with an IAM role that reflects the permissions of the provided credentials (likely your own user). |
