@@ -1,5 +1,11 @@
 # Release Notes
 
+## `1.1.0`
+
+**Release Date**: 2021-01-12
+
+Introduce concept of Provider for dynamic ENV variable retrieval. Implement Provider for AWS credentials.
+
 ## `1.0.1`
 
 **Release Date**: 2020-12-22

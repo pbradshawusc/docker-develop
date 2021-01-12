@@ -1,0 +1,28 @@
+[
+    {
+        "dockerConfig": {
+            "imageName": "aws-provider-sample",
+            "buildArgs": [],
+            "runArgs": [
+                ["-p", "8080:80"]
+            ]
+        },
+        "envProviderConfig": {
+            "aws": {
+                "profile": "default"
+            }
+        },
+        "watchConfig": [
+            {
+                "path": "./src",
+                "recursive": true,
+                "regex": ".*"
+            },
+            {
+                "path": ".",
+                "recursive": false,
+                "regex": "Dockerfile|.dockerignore"
+            }
+        ]
+    }
+]

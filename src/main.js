@@ -1,6 +1,7 @@
 import { DockerDevelopConfigLoader } from './configure';
-import { DockerDevelopLauncher } from './docker';
+import { DockerDevelopLauncher } from './launcher';
 import { DockerDevelopWatcher} from './watcher';
+import { DockerDevelopEnvProviderManager } from './provider';
 
 export function watch(options) {
     // Load Configuration
@@ -9,7 +10,8 @@ export function watch(options) {
     // Launch Docker Applications and Watchers
     const launchers = [];
     configLoader.config.forEach(application => {
-        const launcher = new DockerDevelopLauncher(application.dockerConfig);
+        const provider = new DockerDevelopEnvProviderManager(application.envProviderConfig);
+        const launcher = new DockerDevelopLauncher(application.dockerConfig, provider);
         const watcher = new DockerDevelopWatcher(launcher, application.watchConfig);
         watcher.watch();
         launchers.push(launcher);
