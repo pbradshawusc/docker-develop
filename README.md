@@ -62,6 +62,8 @@ The following additional arguments are supported in the `docker-develop` CLI:
 
 ### Configuration
 
+#### Base Configuration
+
 `docker-develop` is configured via a JSON schema that can be provided at launch. At this time, the schema must be saved to disk and loaded via file path and cannot be provided via CLI arguments. By default, this schema is expected to be named `docker-develop.json` and live at the root where you invoke the `docker-develop` CLI command. However, you may specify a path to the configuration using the `--config` or `-c` CLI argument as outlined in [CLI Arguments](#cli-arguments).
 
 The configuration schema is defined as below:
@@ -195,6 +197,114 @@ Example configuration:
 ]
 ```
 
+#### Local Configuration
+
+In some scenarios, you may require secrets as part of your configuration that a provider does not currently support. In this case, local configurations (extensions) provide a mechanism for a local git ignored file to provide additional configuration to containers outlined in your base configuration. 
+
+The local extension configuration schema is defined as below:
+
+> Note that the root of the schema is an object containing one or multiple image names
+
+```JSON
+{
+    "<imageName>": {
+        "dockerConfig": {
+            "buildArgs": {
+                "type": "Array<BuildArg>",
+                "description": "List of arguments to provide to Docker during the `docker build` step.",
+                "required": false,
+                "default": [],
+                "example": [ [ "--target", "dev" ] ],
+                "customTypes": {
+                    "BuildArg": {
+                        "type": "Array<String>",
+                        "description": "A single argument to provide to Docker during the `docker build` step. Each string in the array will be concatenated with a single space.",
+                        "required": false,
+                        "example": ["--target", "dev"]
+                    }
+                }
+            },
+            "runArgs": {
+                "type": "Array<RunArg>",
+                "description": "List of arguments to provide to Docker during the `docker run` step.",
+                "required": false,
+                "default": [],
+                "example": [ [ "-p", "5000:80" ], [ "-e", "ENV_VAR=hello-world" ] ],
+                "customTypes": {
+                    "RunArg": {
+                        "type": "Array<String>",
+                        "description": "A single argument to provide to Docker during the `docker run` step. Each string in the array will be concatenated with a single space.",
+                        "required": false,
+                        "example": ["-p", "5000:80"]
+                    }
+                }
+            }
+        },
+        "watchConfig": {
+            "type": "Array<WatchConfiguration>",
+            "description": "List of configurations describing directories to watch for changes as well as the filename patterns that should trigger the Docker application to restart. Required, but may be an empty array (`[]`) to specify no watched directories.",
+            "required": true,
+            "example": [
+                {
+                    "path": "./src",
+                    "recursive": "true",
+                    "regex": ".*"
+                }
+            ],
+            "customTypes": {
+                "WatchConfiguration": {
+                    "path": {
+                        "type": "String",
+                        "description": "The path (absolute or relative when using `.`) to a directory to watch for changes.",
+                        "required": true,
+                        "example": "./src"
+                    },
+                    "recursive": {
+                        "type": "Boolean",
+                        "description": "Whether to watch the directory recursively into subdirectories (true) or to only watch the top level specified directory (false).",
+                        "required": false,
+                        "default": true,
+                        "example": true
+                    },
+                    "regex": {
+                        "type": "String",
+                        "description": "The regular expression pattern to test against filenames when a change is detected. If the pattern is a match, relaunch the associated Docker application. If the pattern is not a match, ignore the change and do nothing.",
+                        "required": false,
+                        "default": ".*",
+                        "example": ".*"
+                    }
+                }
+            }
+        }
+    },
+    //...
+}
+```
+
+Example configuration:
+
+```JSON
+{
+    "local-config-sample": {
+        "dockerConfig": {
+            "buildArgs": [
+                ["--target", "dev"]
+            ],
+            "runArgs": [
+                ["-p", "8080:80"]
+            ]
+        },
+        "watchConfig": [
+            {
+                "path": "./src",
+                "recursive": true,
+                "regex": ".*"
+            }
+        ]
+    }
+}
+```
+
 ## Examples
 
 | Example | Description | Run Instructions |
@@ -202,6 +312,8 @@ Example configuration:
 | [Single Image Watch](examples/singleImage) | Launching a single Hello World web application and watching the source HTML for changes. Available on `localhost:8080`. | From `examples/singleImage`, run `docker-develop` |
 | [Alternate Configuration](examples/singleImage) | Launching a single Hello World web application with an alternate configuration and watching the source HTML for changes. Available on `localhost:8081`. | From `examples/singleImage`, run `docker-develop --config docker-develop-alternate.json` or `docker-develop -c docker-develop-alternate.json` |
 | [Multiple Image Watch](examples/multipleImages) | Launching two Hellow World web applications and watching the source HTML of each for changes. Each container rebuilds and relaunches only for changes to it's own source. Available on `localhost:8080` and `localhost:8081`. | From `examples/multipleImages`, run `docker-develop` |
+| [Local Configuration Extension](examples/localConfigExtension) | Launching a single Hello World web application and loading the run arguments from a local extension JSON file using default naming for configuration files. Available on `localhost:8080`. | From `examples/localConfigExtension`, run `docker-develop` |
+| [Local Configuration Extension](examples/localConfigExtension) | Launching a single Hello World web application and loading the run arguments from a local extension JSON file using custom naming for configuration files. Available on `localhost:8081`. | From `examples/localConfigExtension`, run `docker-develop --config docker-develop-alternate.json` or `docker-develop -c docker-develop-alternate.json` |
 | [Simple Provider](examples/provider/simple) | Launching a single Hello World web application but more importantly logging out simple environment variable during Docker build. | From `examples/provider/simple`, run `docker-develop` |
 | [AWS Select Profile Provider](examples/provider/aws) | Launching a single Hello World web application but more importantly prompting the user to select an AWS profile before launch and logging out the AWS Region (buildArg) during Docker build. | From `examples/provider/aws`, run `docker-develop` |
 | [AWS Default Provider](examples/provider/aws) | Launching a single Hello World web application but more importantly logging out the AWS Region (buildArg) of the default AWS profile during Docker build. | From `examples/provider/aws`, run `docker-develop --config docker-develop-alternate.json` |
@@ -210,7 +322,15 @@ Example configuration:
 
 ### ConfigLoader
 
-The `DockerDevelopConfigLoader` finds and then loads the `docker-develop` configuration file. This configuration is then used to determine which Docker applications should be launched as well as what configuration should be used to trigger relaunching each container.
+The `DockerDevelopConfigLoader` finds and then loads the `docker-develop` configuration file. This configuration is then used to determine which Docker applications should be launched as well as what configuration should be used to trigger relaunching each container. The config loader will search for `docker-develop.json` at the root of execution by default.
+
+Additionally, the config loader will search for an optional local extension JSON configuration file using the naming schema `<configFileName>.local.json`. This configuration will map local extensions to any images outlined in your base configuration, but cannot provide additional images. By default, the config loader will search for `docker-develop.local.json` using the pattern from the default base configuration.
+
+The primary purpose for the local extension configuration is to provide a mechanism for developer secrets that cannot be obtained via an existing provider. This local file is intended to be git ignored so that these secrets are not persisted in your source control.
+
+> Note: This extension process relies upon the `.json` file ending of your config file. If your config file does not end with `.json`, the config loader will still search for a file ending with `.local.json`. For example, a custom config file named `.env` would still require a local config to be named `.env.local.json` for the config loader to find it.
+
+Please see the above section [Configuration](#configuration) for more details on the structure of these configuration files.
 
 ### Launcher
 

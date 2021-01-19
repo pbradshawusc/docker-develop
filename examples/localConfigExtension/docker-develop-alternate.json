@@ -1,0 +1,16 @@
+[
+    {
+        "dockerConfig": {
+            "imageName": "local-config-sample",
+            "buildArgs": [],
+            "runArgs": []
+        },
+        "watchConfig": [
+            {
+                "path": ".",
+                "recursive": false,
+                "regex": "Dockerfile|.dockerignore"
+            }
+        ]
+    }
+]

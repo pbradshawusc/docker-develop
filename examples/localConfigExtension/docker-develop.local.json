@@ -1,0 +1,17 @@
+{
+    "local-config-sample": {
+        "dockerConfig": {
+            "buildArgs": [],
+            "runArgs": [
+                ["-p", "8080:80"]
+            ]
+        },
+        "watchConfig": [
+            {
+                "path": "./src",
+                "recursive": true,
+                "regex": ".*"
+            }
+        ]
+    }
+}
