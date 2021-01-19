@@ -1,5 +1,11 @@
 # Release Notes
 
+## `1.2.0`
+
+**Release Date**: 2021-01-19
+
+Introduce concept of local extension configuration for local git ignored secrets.
+
 ## `1.1.0`
 
 **Release Date**: 2021-01-12
