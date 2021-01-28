@@ -61,7 +61,6 @@ export class DockerDevelopConfigLoader {
     mergeExtensionConfig() {
         if (this.extensionConfig) {
             console.log(`Merging in detected local configuration`);
-            console.log(this.extensionConfig);
             Object.keys(this.extensionConfig).forEach(key => {
                 var matchFound = false;
                 for (var i = 0; i < this.config.length; i++) {
