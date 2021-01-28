@@ -1,5 +1,11 @@
 # Release Notes
 
+## `1.2.1`
+
+**Release Date**: 2021-01-28
+
+Fix bug preventing use of multiple providers simultaneously.
+
 ## `1.2.0`
 
 **Release Date**: 2021-01-19

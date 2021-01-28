@@ -1,6 +1,6 @@
 {
   "name": "docker-develop",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Node CLI utility to run Docker applications while watching their source",
   "main": "index.js",
   "bin": {
